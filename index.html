@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StayPulse AI — NYC Room Type Predictor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Animated Ambient Background -->
+  <div class="bg-orb orb-1" aria-hidden="true"></div>
+  <div class="bg-orb orb-2" aria-hidden="true"></div>
+  <div class="bg-grid" aria-hidden="true"></div>
+
+  <div class="app-shell">
+    <!-- Top Header -->
+    <header class="topbar fade-in-down">
+      <div class="brand">
+        <div class="brand-badge">
+          <span class="pulse-dot"></span>
+          <span>FASTAPI + ML</span>
+        </div>
+        <h1>StayPulse <span>AI</span></h1>
+        <p class="subtitle">Interactive NYC listing room-type &amp; probability explorer</p>
+      </div>
+
+      <div class="api-status-pill" id="apiStatus" title="Backend connection status">
+        <span class="status-led" id="statusLed"></span>
+        <span id="statusText">Checking API...</span>
+      </div>
+    </header>
+
+    <!-- Preset Scenarios -->
+    <section class="presets-bar fade-in-up" style="--delay: 0.08s;">
+      <span class="presets-label">Quick Presets:</span>
+      <div class="preset-chips">
+        <button type="button" class="chip" data-preset="manhattan_apt">
+          🏙️ Manhattan Loft
+        </button>
+        <button type="button" class="chip" data-preset="brooklyn_private">
+          🌿 Brooklyn Private Room
+        </button>
+        <button type="button" class="chip" data-preset="queens_shared">
+          ✈️ Queens Shared Stay
+        </button>
+        <button type="button" class="chip" data-preset="bronx_budget">
+          🏡 Bronx Cozy Spot
+        </button>
+      </div>
+    </section>
+
+    <!-- Main Two-Column Workspace -->
+    <main class="workspace">
+      <!-- Left: Feature Form -->
+      <form id="predictForm" class="card form-card fade-in-up" style="--delay: 0.14s;" novalidate>
+        <div class="card-header">
+          <div>
+            <h2>Listing Features</h2>
+            <p>Tune spatial, pricing, availability, and review signals</p>
+          </div>
+          <button type="button" id="resetBtn" class="btn-ghost" title="Reset all fields">
+            Reset
+          </button>
+        </div>
+
+        <!-- Location Group -->
+        <div class="group-title">Location &amp; Neighbourhood</div>
+        <div class="grid-2">
+          <div class="field">
+            <label for="neighbourhood_group">Neighbourhood Group</label>
+            <select id="neighbourhood_group" name="neighbourhood_group" required>
+              <option value="Manhattan">Manhattan</option>
+              <option value="Brooklyn">Brooklyn</option>
+              <option value="Queens">Queens</option>
+              <option value="Bronx">Bronx</option>
+              <option value="Staten Island">Staten Island</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="neighbourhood">Neighbourhood</label>
+            <input
+              type="text"
+              id="neighbourhood"
+              name="neighbourhood"
+              value="Harlem"
+              placeholder="e.g. Harlem, Williamsburg"
+              required
+            />
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="field">
+            <label for="latitude">
+              Latitude <span class="range-tag">[-90, 90]</span>
+            </label>
+            <input
+              type="number"
+              step="any"
+              id="latitude"
+              name="latitude"
+              value="40.8075"
+              min="-90"
+              max="90"
+              required
+            />
+          </div>
+
+          <div class="field">
+            <label for="longitude">
+              Longitude <span class="range-tag">[-180, 180]</span>
+            </label>
+            <input
+              type="number"
+              step="any"
+              id="longitude"
+              name="longitude"
+              value="-73.9626"
+              min="-180"
+              max="180"
+              required
+            />
+          </div>
+        </div>
+
+        <!-- Pricing & Booking Group -->
+        <div class="group-title">Pricing &amp; Stay Rules</div>
+        <div class="grid-3">
+          <div class="field">
+            <label for="price">Price / Night ($)</label>
+            <input
+              type="number"
+              step="any"
+              id="price"
+              name="price"
+              value="145"
+              min="0.01"
+              required
+            />
+          </div>
+
+          <div class="field">
+            <label for="minimum_nights">Min Nights</label>
+            <input
+              type="number"
+              id="minimum_nights"
+              name="minimum_nights"
+              value="3"
+              min="1"
+              max="365"
+              required
+            />
+          </div>
+
+          <div class="field">
+            <label for="availability_365">Availability (365d)</label>
+            <input
+              type="number"
+              id="availability_365"
+              name="availability_365"
+              value="180"
+              min="0"
+              max="365"
+              required
+            />
+          </div>
+        </div>
+
+        <!-- Host & Reviews Group -->
+        <div class="group-title">Reviews &amp; Host Activity</div>
+        <div class="grid-3">
+          <div class="field">
+            <label for="number_of_reviews">Total Reviews</label>
+            <input
+              type="number"
+              id="number_of_reviews"
+              name="number_of_reviews"
+              value="42"
+              min="0"
+              required
+            />
+          </div>
+
+          <div class="field">
+            <label for="reviews_per_month">Reviews / Month</label>
+            <input
+              type="number"
+              step="any"
+              id="reviews_per_month"
+              name="reviews_per_month"
+              value="1.85"
+              min="0"
+              required
+            />
+          </div>
+
+          <div class="field">
+            <label for="calculated_host_listings_count">Host Listings</label>
+            <input
+              type="number"
+              id="calculated_host_listings_count"
+              name="calculated_host_listings_count"
+              value="2"
+              min="0"
+              required
+            />
+          </div>
+        </div>
+
+        <div id="formError" class="error-banner hidden" role="alert"></div>
+
+        <button type="submit" id="submitBtn" class="btn-primary">
+          <span class="btn-content">
+            <span class="sparkle">✦</span>
+            <span id="submitLabel">Predict Room Type</span>
+          </span>
+          <span class="spinner hidden" id="btnSpinner"></span>
+        </button>
+      </form>
+
+      <!-- Right: Live Prediction & Probability Stage -->
+      <aside class="card result-card fade-in-up" style="--delay: 0.2s;">
+        <div class="card-header">
+          <div>
+            <h2>Prediction Output</h2>
+            <p>Model classification &amp; class confidence</p>
+          </div>
+          <span class="latency-badge" id="latencyBadge">— ms</span>
+        </div>
+
+        <!-- Empty / Idle State -->
+        <div id="idleState" class="idle-box">
+          <div class="radar-ring">
+            <div class="radar-core">ML</div>
+          </div>
+          <h3>Ready to classify</h3>
+          <p>
+            Choose a borough preset or adjust the listing attributes and hit
+            <strong>Predict Room Type</strong>.
+          </p>
+        </div>
+
+        <!-- Active Result State -->
+        <div id="resultState" class="result-stage hidden">
+          <div class="predicted-hero">
+            <span class="hero-kicker">PREDICTED ROOM TYPE</span>
+            <div class="predicted-value" id="predictedRoomType">—</div>
+            <div class="confidence-pill" id="confidencePill">Top confidence: —</div>
+          </div>
+
+          <div class="bars-section">
+            <div class="bars-header">
+              <span>Class Probability Distribution</span>
+              <span class="muted-note">Sorted by score</span>
+            </div>
+            <div id="probabilityList" class="probability-list"></div>
+          </div>
+
+          <details class="payload-drawer">
+            <summary>Inspect JSON Request &amp; Response</summary>
+            <pre id="jsonInspector" class="code-block"></pre>
+          </details>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
